@@ -1,0 +1,446 @@
+
+# КОНФИГУРАЦИЯ
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+
+mqtt:
+  broker: broker.hivemq.com
+  port: 8883
+  username: "ZelArt"
+  password: "ZelArt911"
+  
+
+sensor:
+
+     - platform: mqtt
+       name: "Temperature_zel"
+       state_topic: "Zelen/temp"
+       value_template: '{{ value | round(1) }}'
+       unit_of_measurement: '°C'
+
+     - platform: mqtt
+       name: "Pressure_zel"
+       state_topic: "Zelen/pres"
+       value_template: '{{ value | round(2) }}'
+       unit_of_measurement: 'hPa'  
+   
+     - platform: mqtt
+       name: "CO2_zel"
+       state_topic: "Zelen/co2"
+       value_template: '{{ value | round(0) }}'
+       unit_of_measurement: 'ppm'
+
+     - platform: mqtt
+       name: "Humidity_zel"
+       state_topic: "Zelen/humidity"
+       value_template: '{{ value | round(1) }}'
+       unit_of_measurement: '%'
+    
+light:
+  - platform: mqtt
+    name: "Выключатель светильника"
+    state_topic: "Zelen/led"
+    command_topic: "Zelen/led"
+    payload_on: "1"  
+    payload_off: "0"
+    qos: 0
+    retain: true
+    
+        
+  - platform: mqtt
+    name: "Кнопка автопереключения"
+    command_topic: "Zelen/autoplay"
+    state_topic: "Zelen/autoplay"
+    payload_off: "0"
+    payload_on: "1"
+    qos: 0
+    retain: true
+    
+  - platform: mqtt
+    name: "Выключатель будильника"
+    command_topic: "Zelen/alarm_command"
+    state_topic: "Zelen/alarm_command"
+    payload_off: "0"
+    payload_on: "1"
+    qos: 0
+    retain: true  
+
+    
+#  - platform: mqtt
+#    name: "Регулятор яркости"
+#    state_topic: "Zelen/led"
+#    command_topic: "Zelen/led"
+#    brightness_state_topic:  "Zelen/brightness_state"
+#    brightness_command_topic: "Zelen/brightness_command"
+#    brightness_scale: 255
+#    on_command_type: 'brightness'
+#    payload_off: "OFF"
+#    payload_on: "1"
+#    qos: 0
+#    retain: true
+#    
+#  - platform: mqtt
+#    name: "Регулятор скорости"
+#    state_topic: "Zelen/led"
+#    command_topic: "Zelen/led"
+#    brightness_state_topic:  "Zelen/speed_state"
+#    brightness_command_topic: "Zelen/speed_command"
+#    brightness_scale: 255
+#    on_command_type: 'brightness'
+#    payload_off: "OFF"
+#    payload_on: "1"
+#    qos: 0
+#    retain: true
+#    
+#  - platform: mqtt
+#    name: "Регулятор насыщенности"
+#    state_topic: "Zelen/led"
+#    command_topic: "Zelen/led"
+#    brightness_state_topic: "Zelen/scale_state"
+#    brightness_command_topic: "Zelen/scale_command"
+#    brightness_scale: 255
+#    on_command_type: 'brightness'
+#    payload_off: "OFF"
+#    payload_on: "1"
+#    qos: 0
+#    retain: true
+
+
+    
+    #ДОБАВЛЯЕМ ЭЛЕМЕНТЫ ВВОД И УПРАВЛЕНИЯ 
+input_number: 
+    alarm_1_hour: 
+        name: Hours 
+        icon: mdi:timer
+        initial: 7 
+        min: 0 
+        max: 23 
+        step: 1
+    alarm_1_minutes: 
+        name: Minutes 
+        icon: mdi:timer 
+        initial: 15 
+        min: 0 
+        max: 59 
+        step: 1 
+    alarm_1_offset: 
+        name: Transition 
+        icon: mdi:blur-linear 
+        initial: 5 
+        min: 0 
+        max: 60 
+        step: 5 
+    target_mode: 
+        name: Play mode 
+        icon: mdi:eye 
+        initial: 0 
+        min: 0 
+        max: 7 
+        step: 1 
+    target_brig:
+        name: Target Brightness
+        min: 5
+        max: 255
+        step: 1
+ #       unit_of_measurement: step
+        icon: mdi:brightness-7
+    target_speed:
+        name: Target Speed
+        min: 15
+        max: 228
+        step: 1
+   #     unit_of_measurement: step
+        icon: mdi:speedometer
+    target_scale:
+        name: Target Scale
+        min: 1
+        max: 80
+        step: 1
+   #     unit_of_measurement: step
+        icon: mdi:brightness-percent
+
+input_datetime:
+  both_date_and_time:
+    name: Input with both date and time
+    has_date: true
+    has_time: true
+  only_date:
+    name: Input with only date
+    has_date: true
+    has_time: false
+  only_time:
+    name: Input with only time
+    has_date: false
+    has_time: true
+ 
+input_boolean:
+       autoclimate:
+         name: autoclimate
+         icon: mdi:home-thermometer-outline
+
+#           
+    
+#alarm:
+#    input_boolean:
+#        alarm:
+#        
+#        alarm_1:
+#        alarm_2:
+#        alarm_weekend:
+#    
+#    input_datetime:
+#        alarm:
+#          has_date: false
+#          has_time: true
+#          
+#        alarm_weekend:
+#          has_date: false
+#          has_time: true
+          
+
+
+
+# АВТОМАТИЗАЦИЯ
+#Яркость 
+  - alias: "Set brig slider"
+    trigger:
+      platform: mqtt
+      topic: "Zelen/brightness_state"
+    action:
+      service: input_number.set_value
+      target:
+        entity_id: input_number.target_brig
+      data:
+        value: "{{ trigger.payload }}"
+
+  - alias: "brig slider moved"
+    trigger:
+      platform: state
+      entity_id: input_number.target_brig
+    action:
+      service: mqtt.publish
+      data:
+        topic: "Zelen/brightness_command"
+        retain: true
+        payload: "{{ states('input_number.target_brig') | int }}" 
+   
+        
+ #Скорость 
+  - alias: "Set speed slider"
+    trigger:
+      platform: mqtt
+      topic: "Zelen/speed_state"
+    action:
+      service: input_number.set_value
+      target:
+        entity_id: input_number.target_speed
+      data:
+        value: "{{ trigger.payload }}"
+
+  - alias: "Temp slider moved"
+    trigger:
+      platform: state
+      entity_id: input_number.target_speed
+    action:
+      service: mqtt.publish
+      data:
+        topic: "Zelen/speed_command"
+        retain: true
+        payload: "{{ states('input_number.target_speed') | int }}" 
+
+        
+ #Размер 
+  - alias: "Set scale slider"
+    trigger:
+      platform: mqtt
+      topic: "Zelen/scale_state"
+    action:
+      service: input_number.set_value
+      target:
+        entity_id: input_number.target_scale
+      data:
+        value: "{{ trigger.payload }}"
+
+  - alias: "Scale slider moved"
+    trigger:
+      platform: state
+      entity_id: input_number.target_scale
+    action:
+      service: mqtt.publish
+      data:
+        topic: "Zelen/scale_command"
+        retain: true
+        payload: "{{ states('input_number.target_scale') | int }}"
+ 
+        
+ # Смена режима 
+  - alias: "Mode slider"
+    trigger:
+      platform: mqtt
+      topic: "Zelen/mode_state"
+    action:
+      service: input_number.set_value
+      target:
+        entity_id: input_number.target_mode
+      data:
+        value: "{{ trigger.payload }}"
+
+  - alias: "Mode slider moved"
+    trigger:
+      platform: state
+      entity_id: input_number.target_mode
+    action:
+      service: mqtt.publish
+      data:
+        topic: "Zelen/mode_command"
+        retain: true
+        payload: "{{ states('input_number.target_mode') | int }}"
+
+# Будильник 
+  - alias: "Minutes slider moved"
+    trigger:
+      platform: state
+      entity_id: input_number.alarm_1_minutes
+    action:
+      service: mqtt.publish
+      data:
+        topic: "Zelen/minutes_command"
+        retain: true
+        payload: "{{ states('input_number.alarm_1_minutes') | int }}"
+
+  - alias: "Hours slider moved"
+    trigger:
+      platform: state
+      entity_id: input_number.alarm_1_hour
+    action:
+      service: mqtt.publish
+      data:
+        topic: "Zelen/hours_command"
+        retain: true
+        payload: "{{ states('input_number.alarm_1_hour') | int }}" 
+  
+  
+# Автоматизация микроклимата
+  - alias: "Autoclimate On"
+    trigger:
+    - platform: state
+      entity_id: binary_sensor.autoclimate
+      to: "on"
+    action:
+      - choose:
+          #если температура низкая
+          - conditions:
+              - condition: template
+                value_template: "{{ sensor.temperature_zel < 23 }}"
+            sequence:
+             # прописываем включение кондиционера
+            
+            #если температура высокая 
+          - conditions:
+              - condition: template
+                value_template: "{{ sensor.temperature_zel > 26 }}"
+            sequence:
+             # прописываем включение кондиционера
+             
+             #если влажность низкая
+          - conditions:
+              - condition: template
+                value_template: "{{ sensor.humidity_zel < 40 }}"
+            sequence:
+             # прописываем включение увлажнителя и выключение осушителя
+            
+            #если влажность высокая 
+          - conditions:
+              - condition: template
+                value_template: "{{ sensor.humidity_zel > 55 }}"
+            sequence:
+             # прописываем включение осушителя и выключение увлажнителя
+             
+             #если СО2 высокое
+          - conditions:
+              - condition: template
+                value_template: "{{ sensor.co2_zel > 400 }}"
+            sequence:
+             # прописываем включение приточной винтиляции
+
+
+#Формы
+type: entities
+entities:
+  - entity: sensor.temperature_zel
+    name: Температура
+  - entity: sensor.pressure_zel
+    icon: mdi:eye-outline
+    name: Давление
+  - entity: sensor.co2_zel
+    icon: mdi:molecule-co2
+    name: СО2
+  - entity: sensor.humidity_zel
+    icon: mdi:water-percent
+    name: Влажность
+  - entity: input_boolean.autoclimate
+    name: Авторегулирование климата
+title: Параметры микроклимата
+state_color: true
+show_header_toggle: false
+
+
+
+type: entities
+entities:
+  - entity: light.vykliuchatel_svetilnika
+    icon: mdi:lightning-bolt
+    name: Выключатель светильника
+  - entity: light.knopka_avtoperekliucheniia
+    icon: mdi:lightbulb-auto-outline
+    name: Авто смена режима
+  - entity: input_number.target_brig
+    icon: mdi:brightness-7
+    name: Яркость
+  - entity: input_number.target_speed
+    icon: mdi:speedometer
+    name: Скорость анимации
+  - entity: input_number.target_scale
+    icon: mdi:brightness-percent
+    name: Плотность анимации
+  - entity: input_number.target_mode
+    name: Режим подсветки
+show_header_toggle: false
+title: Светильник
+
+
+
+type: entities
+entities:
+  - entity: light.vykliuchatel_budilnika
+    icon: mdi:alarm-snooze
+    name: Будильник
+  - entity: input_number.alarm_1_hour
+    name: Час
+    icon: mdi:clock-edit
+  - entity: input_number.alarm_1_minutes
+    icon: mdi:clock-edit-outline
+    name: Минуты
+show_header_toggle: false
+title: Будильник
+
+
+
+entities:
+  - entity: sensor.temperature_zel
+  - entity: sensor.pressure_zel
+  - entity: sensor.humidity_zel
+  - entity: sensor.co2_zel
+refresh_interval: 5
+hours_to_show: 10
+title: Микроклимат (история)
+
